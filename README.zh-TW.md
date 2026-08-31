@@ -65,7 +65,7 @@ computer_vision/
 | [classic_network](computer_vision/classic_network/classic_network.py) | — | 經典 CNN 架構（LeNet-5）|
 | [image_classification](computer_vision/image_classification/image_classification.py) | — | 端到端影像分類：合成資料集、TinyResNet、mixup + cosine LR schedule |
 | [transfer_learning_fine_tuning](computer_vision/transfer_learning_fine_tuning/transfer_learning_fine_tuning.py) | — | 用預訓練 ResNet18 backbone 做遷移學習/微調 |
-| [object_detection_YOLO](computer_vision/object_detection_YOLO/object_detection_YOLO.py) | — | 從零實作的最小 YOLO 風格單階段物件偵測器 |
+| [object_detection_YOLO](computer_vision/object_detection_YOLO/object_detection_YOLO.py) | [筆記](computer_vision/object_detection_YOLO/object_detection_YOLO.md) | 從零實作的最小 YOLO 風格單階段物件偵測器 |
 | [semantic_segmentation](computer_vision/semantic_segmentation/semantic_segmentation.py) | — | 從零訓練的 U-Net 語意分割 |
 
 ## 環境需求
