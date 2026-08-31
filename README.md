@@ -66,7 +66,7 @@ Notes are added incrementally, so not every script has one yet — the "Notes" c
 | [image_classification](computer_vision/image_classification/image_classification.py) | — | End-to-end image classification: synthetic dataset, TinyResNet, mixup + cosine LR schedule |
 | [transfer_learning_fine_tuning](computer_vision/transfer_learning_fine_tuning/transfer_learning_fine_tuning.py) | — | Transfer learning / fine-tuning on a pretrained ResNet18 backbone |
 | [object_detection_YOLO](computer_vision/object_detection_YOLO/object_detection_YOLO.py) | [notes](computer_vision/object_detection_YOLO/object_detection_YOLO.md) | Minimal YOLO-style single-stage object detector, from scratch |
-| [semantic_segmentation](computer_vision/semantic_segmentation/semantic_segmentation.py) | — | U-Net for semantic segmentation, trained from scratch |
+| [semantic_segmentation](computer_vision/semantic_segmentation/semantic_segmentation.py) | [notes](computer_vision/semantic_segmentation/semantic_segmentation.md) | U-Net for semantic segmentation, trained from scratch |
 
 ## Requirements
 
