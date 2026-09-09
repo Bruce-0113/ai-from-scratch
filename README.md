@@ -58,6 +58,11 @@ Notes are added incrementally, so not every script has one yet — the "Notes" c
 | [evaluation_testing](LLM_engineering/evaluation_testing/evaluation_testing.py) | — | LLM-as-judge scoring, ROUGE-L, confidence intervals, baseline-vs-new comparison |
 | [production_llm_app](LLM_engineering/production_llm_app/production_llm_app.py) | — | Simulated production LLM service: prompt A/B testing, guardrails, retry-with-fallback, streaming |
 
+### LLM From Scratch
+| Script | Notes | Description |
+|---|---|---|
+| [Tokenizers](LLM_from_scratch/Tokenizers/tokenizers.py) | [notes](LLM_from_scratch/Tokenizers/README.md) | Byte-level BPE tokenizer built from scratch, benchmarked against a char-level baseline and tiktoken |
+
 ### Computer Vision
 | Script | Notes | Description |
 |---|---|---|

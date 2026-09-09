@@ -58,6 +58,11 @@ computer_vision/
 | [evaluation_testing](LLM_engineering/evaluation_testing/evaluation_testing.py) | — | LLM-as-judge 評分、ROUGE-L、信賴區間、baseline 比較 |
 | [production_llm_app](LLM_engineering/production_llm_app/production_llm_app.py) | — | 模擬生產環境 LLM 服務：prompt A/B 測試、防護機制（guardrails）、重試/降級、串流輸出 |
 
+### LLM From Scratch
+| Script | 筆記 | 說明 |
+|---|---|---|
+| [Tokenizers](LLM_from_scratch/Tokenizers/tokenizers.py) | [筆記](LLM_from_scratch/Tokenizers/README.md) | 從零實作 byte-level BPE tokenizer,並與 character-level baseline、tiktoken 對照 |
+
 ### Computer Vision
 | Script | 筆記 | 說明 |
 |---|---|---|
