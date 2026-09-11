@@ -50,9 +50,24 @@ LLM inference分成兩個體質完全不同的階段:**prefill**一次平行處�
 - ✅ 想搞懂「vLLM/SGLang/TensorRT-LLM這些inference server底層到底在幹嘛」,而不是只知道要裝哪個套件:KV cache的寫入時序、continuous batching的排程邏輯、prefix cache的trie結構、speculative decoding的accept/reject流程,這裡每一步都是用純Python/numpy攤開寫的,沒有藏在CUDA kernel或Rust runtime裡。
 - ✅ 需要對「這個model能不能上線、能撐幾個使用者」做back-of-envelope估算:`memory_budget`把「模型權重佔多少、KV cache佔多少、還剩多少給並發使用者」三件事拆開算,面試或做容量規劃時可以直接套用這個框架,不用等到真的把model部署上去才發現放不下。
 - ✅ 想直覺理解GQA/MQA為什麼重要:改一下`MODEL_CONFIGS`裡`num_kv_heads`,重跑`kv_cache_memory`,馬上能看到KV cache大小怎麼隨著GQA分組數線性縮放。
-- ❌ 不要把這裡的`KVCache`/`PrefixCache`直接搬進真正的inference server:沒有PagedAttention式的page配置(見上方實作細節)、沒有多request共享實體記憶體的機制、`PrefixCache`是單機記憶體內的trie而非跨request/跨GPU的radix tree,正式場景請直接用vLLM(PagedAttention + continuous batching,通用性最廣)、SGLang(RadixAttention prefix caching,對多輪對話特別有效)或TensorRT-LLM(NVIDIA GPU上吞吐量最高,kernel fusion + FP8)。
+- ❌ 不要把這裡的`KVCache`/`PrefixCache`直接搬進真正的inference server:沒有PagedAttention式的page配置(見上方實作細節)、沒有多request共享實體記憶體的機制、`PrefixCache`是單機記憶體內的trie而非跨request/跨GPU的radix tree,正式場景請直接用vLLM、SGLang或TensorRT-LLM(選型細節見下方「生產環境怎麼選」)。
 - ❌ `speculative_decode`的draft/target model是機率分佈的模擬,不是真的小model猜大model:程式沒有示範「怎麼訓練/選一個draft model」或EAGLE那類「用target model的hidden state直接預測」的做法,只示範了「給定一個接受率,加速倍率長什麼樣子」這個上層效果;真的要接draft model,需要另外接一個真實的小model或n-gram lookup。
 - ❌ 不適合拿來做真正的效能測試或benchmark:所有的「cost」都是寫死的常數(`draft_cost=1.0`、`target_cost=10.0`、`verify_cost=12.0`),不是量測出來的真實硬體數字,拿這裡的`speedup`去做論文或報告裡的效能宣稱是不合理的,它只適合拿來建立「加速倍率跟接受率、投機token數量之間大致是什麼關係」的直覺。
+
+## 生產環境怎麼選:vLLM / SGLang / TensorRT-LLM
+2026年的LLM inference serving生態基本上由這三套engine主導,各自的優化重點不同,選型應該跟著workload特性走,而不是選「最新」或「最紅」的那個:
+
+| Engine | 核心技術 | 最適合的情境 |
+|---|---|---|
+| vLLM | PagedAttention、continuous batching | 通用型serving,相容性最廣 |
+| SGLang | RadixAttention(prefix caching)、結構化生成 | 多輪對話、constrained decoding |
+| TensorRT-LLM | NVIDIA kernel fusion、FP8量化 | NVIDIA硬體上的單卡最大吞吐量 |
+
+- **vLLM是預設起手式**:支援的model範圍最廣,任何GPU廠商(NVIDIA/AMD/Intel)都能跑,靠PagedAttention(本程式`KVCache`沒有實作的部分,見上方「實作細節」)加上continuous batching(對應`simulate_continuous_batching`的概念)拿到不錯的吞吐量,又有OpenAI相容API可以直接當替代品接上既有系統。不確定workload特性、想要通用性跟最廣硬體支援時,先選它。
+- **SGLang在有前綴重疊的場景特別有優勢**:建立在跟vLLM類似的基礎上,額外加了RadixAttention(對應本程式`PrefixCache`想模擬的概念,但`PrefixCache`只是單機記憶體內的trie,不是跨request/跨GPU的radix tree)跟一套描述結構化LLM程式的DSL。如果workload是多輪對話(同一個對話歷史被反覆延伸)、大量request共用同一份system prompt/few-shot範例、或需要constrained decoding(JSON輸出、regex-guided generation、tool use),SGLang靠前綴重用往往能比vLLM快2-5倍。
+- **TensorRT-LLM把model編譯成針對NVIDIA GPU優化過的kernel**:融合多個運算(attention + linear + activation揉進同一個kernel)、在H100上用FP8量化、並整合NVIDIA Triton Inference Server做生產部署。在NVIDIA硬體上能拿到最高的單卡吞吐量,但只能用在NVIDIA GPU上,而且部署設定比另外兩套麻煩。
+
+實務上簡單的判斷順序:不確定就先上vLLM;一旦發現workload是「同一個對話歷史反覆被下一輪引用」或「大量request共用同一份system prompt」這種有前綴重疊的模式,就值得評估換SGLang;如果整個部署環境本來就是NVIDIA GPU、又在乎單卡極限吞吐量,才值得投入TensorRT-LLM的編譯與部署成本。
 
 ## 常見誤區
 1. **以為KV cache省的是算力(FLOPs),其實它省的是「不用重算」這件事本身,代價是顯存**:KV cache用顯存換掉重算的浪費,但顯存不是無限的——這正是為什麼會有`memory_budget`這個計算機:KV cache太大,直接壓縮「能同時服務幾個人」這個數字,顯存從來就是inference serving真正的稀缺資源,不是算力。
