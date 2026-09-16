@@ -289,6 +289,7 @@ TOOL_REGISTRY = {
     },
 }
 
+
 def classify_intent(query):
     """Classify a query into one or more intent categories by keyword match.
 
@@ -321,6 +322,7 @@ def classify_intent(query):
 
     max_score = max(scores.values())
     return [intent for intent, score in scores.items() if score >= max_score * 0.5]
+
 
 def select_tools(query, token_budget=2000):
     """Select relevant tools for a query, respecting a token budget.
@@ -487,3 +489,7 @@ def run_demo():
     print(f"  Scores:         {scores}")
     print(f"  Reordered:      {reordered}")
     print(f"  (Most relevant at start and end, least relevant in middle)")
+
+
+if __name__ == "__main__":
+    run_demo()
